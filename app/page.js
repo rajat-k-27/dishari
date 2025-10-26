@@ -41,7 +41,7 @@ export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [typedText, setTypedText] = useState('');
-  const fullText = 'DISHARI';
+  const fullText = 'Dishari';
 
   useEffect(() => {
     fetchFeaturedProducts();
@@ -80,8 +80,8 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden gradient-bg">
         {/* Animated Background Bubbles */}
-        {[...Array(20)].map((_, i) => {
-          const size = Math.random() * 30 + 10; // Random size between 10-50px
+        {[...Array(10)].map((_, i) => {
+          const size = Math.random() * 20 + 10; // Random size between 10-50px
           const delay = Math.random() * 8;
           const duration = Math.random() * 8 + 10; // Random duration 10-18s
           const startX = Math.random() * 100; // Random X position
@@ -138,7 +138,7 @@ export default function HomePage() {
               transition={{ delay: 0.2, duration: 0.8 }}
               className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight"
             >
-              Welcome to <span className="text-green-600" style={{ WebkitTextStroke: '2px white', textShadow: '0 0 20px rgba(255, 255, 255, 0.5)' }}>{typedText}</span>
+              Welcome to <span className="text-white" >{typedText}</span>
             </motion.h1>
 
             <motion.p
@@ -414,7 +414,7 @@ export default function HomePage() {
               transition={{ duration: 3, repeat: Infinity }}
               className="inline-block"
             >
-              <FaStar className="text-6xl mx-auto mb-6 text-green-400 filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" style={{ WebkitTextStroke: '2px white' }} />
+              <FaStar className="text-6xl mx-auto mb-6 text-white filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" style={{ WebkitTextStroke: '2px white' }} />
             </motion.div>
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
               Ready to Experience <span className="text-primary-100">Dishari</span>?
