@@ -42,23 +42,97 @@ export default function AddProductPage() {
     });
   };
 
-  const handleImageChange = (e) => {
+  const compressImage = (file, maxWidth = 1200, quality = 0.8) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Resize if too large
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                reject(new Error('Compression failed'));
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
+
+  const handleImageChange = async (e) => {
     const files = Array.from(e.target.files);
     if (images.length + files.length > 5) {
       toast.error('Maximum 5 images allowed');
       return;
     }
 
-    setImages([...images, ...files]);
+    // Check file sizes and compress if needed
+    const processedFiles = [];
+    const toastId = toast.loading('Processing images...');
 
-    // Create previews
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreviews(prev => [...prev, reader.result]);
-      };
-      reader.readAsDataURL(file);
-    });
+    for (const file of files) {
+      try {
+        // Check file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`${file.name} is too large. Maximum size is 5MB.`);
+          continue;
+        }
+
+        // Compress image if it's larger than 1MB
+        let processedFile = file;
+        if (file.size > 1024 * 1024 && file.type.startsWith('image/')) {
+          processedFile = await compressImage(file);
+          console.log(`Compressed ${file.name}: ${(file.size / 1024).toFixed(2)}KB → ${(processedFile.size / 1024).toFixed(2)}KB`);
+        }
+
+        processedFiles.push(processedFile);
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreviews(prev => [...prev, reader.result]);
+        };
+        reader.readAsDataURL(processedFile);
+      } catch (error) {
+        console.error('Error processing image:', error);
+        toast.error(`Failed to process ${file.name}`);
+      }
+    }
+
+    toast.dismiss(toastId);
+    if (processedFiles.length > 0) {
+      setImages([...images, ...processedFiles]);
+      toast.success(`${processedFiles.length} image(s) added`);
+    }
   };
 
   const removeImage = (index) => {
@@ -68,28 +142,40 @@ export default function AddProductPage() {
 
   const uploadImages = async () => {
     const uploadedUrls = [];
+    let uploadCount = 0;
 
     for (const image of images) {
       const formData = new FormData();
       formData.append('file', image);
 
       try {
+        uploadCount++;
+        toast.loading(`Uploading image ${uploadCount}/${images.length}...`);
+
         const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         });
 
         const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || data.message || `Upload failed with status ${response.status}`);
+        }
+
         if (data.success) {
           uploadedUrls.push({
             url: data.url,
             public_id: data.public_id || data.data?.public_id || ''
           });
+          toast.dismiss();
         } else {
           throw new Error(data.message || 'Upload failed');
         }
       } catch (error) {
         console.error('Image upload error:', error);
+        toast.dismiss();
+        toast.error(`Failed to upload image ${uploadCount}: ${error.message}`);
         throw error;
       }
     }
@@ -117,12 +203,23 @@ export default function AddProductPage() {
 
       // Upload images
       setUploading(true);
-      toast.loading('Uploading images...');
-      const imageUrls = await uploadImages();
-      toast.dismiss();
+      let imageUrls = [];
+      
+      try {
+        imageUrls = await uploadImages();
+        toast.success('Images uploaded successfully!');
+      } catch (uploadError) {
+        console.error('Image upload failed:', uploadError);
+        toast.error('Image upload failed. Please try again with smaller images.');
+        setUploading(false);
+        setLoading(false);
+        return;
+      }
+      
       setUploading(false);
 
       // Create product
+      toast.loading('Creating product...');
       const response = await fetch('/api/products', {
         method: 'POST',
         headers: {
@@ -137,16 +234,18 @@ export default function AddProductPage() {
       });
 
       const data = await response.json();
+      toast.dismiss();
 
       if (data.success) {
         toast.success('Product created successfully!');
         router.push('/admin/products');
       } else {
-        toast.error(data.message || 'Failed to create product');
+        console.error('Product creation failed:', data);
+        toast.error(data.error || data.message || 'Failed to create product');
       }
     } catch (error) {
       console.error('Error creating product:', error);
-      toast.error('Failed to create product');
+      toast.error(`Failed to create product: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -292,19 +391,22 @@ export default function AddProductPage() {
               </label>
 
               {/* Upload Button */}
-              <div className="mt-2">
+              <div className="flex flex-col gap-2">
                 <label className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 cursor-pointer transition-colors">
                   <FaUpload />
                   <span>Upload Images</span>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
                     multiple
                     onChange={handleImageChange}
                     className="hidden"
                     disabled={images.length >= 5}
                   />
                 </label>
+                <p className="text-sm text-gray-500">
+                  Maximum 5 images, 5MB each. Images will be automatically compressed for optimal upload.
+                </p>
               </div>
 
               {/* Image Previews */}
