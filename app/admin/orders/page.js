@@ -39,6 +39,16 @@ export default function AdminOrdersPage() {
       const response = await fetch('/api/orders');
       const data = await response.json();
       if (data.success) {
+        console.log('Fetched orders:', data.data);
+        // Log first cancelled order to check cancelledBy field
+        const cancelledOrder = data.data?.find(o => o.orderStatus === 'cancelled');
+        if (cancelledOrder) {
+          console.log('Cancelled order sample:', {
+            id: cancelledOrder._id,
+            status: cancelledOrder.orderStatus,
+            cancelledBy: cancelledOrder.cancelledBy
+          });
+        }
         setOrders(data.data || data.orders || []);
       }
     } catch (error) {
@@ -53,12 +63,20 @@ export default function AdminOrdersPage() {
     try {
       console.log('Updating order status:', orderId, 'to', newStatus);
       
+      // Prepare the update body
+      const updateBody = { orderStatus: newStatus };
+      
+      // If status is being changed to cancelled, mark it as cancelled by admin
+      if (newStatus === 'cancelled') {
+        updateBody.cancelledBy = 'admin';
+      }
+      
       const response = await fetch(`/api/orders/${orderId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ orderStatus: newStatus }),
+        body: JSON.stringify(updateBody),
       });
 
       const data = await response.json();
@@ -282,6 +300,11 @@ export default function AdminOrdersPage() {
                         <td className="px-6 py-4">
                           <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.orderStatus)}`}>
                             {order.orderStatus}
+                            {order.orderStatus === 'cancelled' && order.cancelledBy && (
+                              <span className="ml-1 text-xs">
+                                (by {order.cancelledBy})
+                              </span>
+                            )}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -331,6 +354,13 @@ export default function AdminOrdersPage() {
                 Address: {viewModal.order.customerInfo.address.street}, {viewModal.order.customerInfo.address.city}, 
                 {viewModal.order.customerInfo.address.state} - {viewModal.order.customerInfo.address.zipCode}
               </p>
+              {viewModal.order.orderStatus === 'cancelled' && viewModal.order.cancelledBy && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm font-semibold text-red-800">
+                    ⚠️ Order cancelled by: <span className="capitalize">{viewModal.order.cancelledBy}</span>
+                  </p>
+                </div>
+              )}
             </div>
 
             <div>

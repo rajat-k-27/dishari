@@ -78,6 +78,11 @@ const OrderSchema = new mongoose.Schema(
       enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
       default: 'pending',
     },
+    cancelledBy: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: null,
+    },
     notes: String,
   },
   {

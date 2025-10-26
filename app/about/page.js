@@ -76,19 +76,40 @@ export default function AboutPage() {
   return (
     <div className="overflow-hidden">
       {/* Hero Section */}
-      <section className="relative min-h-[60vh] flex items-center justify-center gradient-bg text-white">
-        <motion.div
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-          className="absolute inset-0 bg-[url('/pattern.svg')] bg-repeat opacity-10"
-        />
+      <section className="relative min-h-[60vh] flex items-center justify-center gradient-bg text-white overflow-hidden">
+        {/* Animated Background Bubbles */}
+        {[...Array(20)].map((_, i) => {
+          const size = Math.random() * 40 + 10;
+          const delay = Math.random() * 8;
+          const duration = Math.random() * 8 + 10;
+          const startX = Math.random() * 100;
+          const startY = 100 + Math.random() * 20;
+          
+          return (
+            <motion.div
+              key={i}
+              animate={{
+                y: [0, typeof window !== 'undefined' ? -window.innerHeight - 100 : -1000],
+                x: [0, Math.sin(i) * 50, Math.cos(i) * 30],
+                opacity: [0, 0.4, 0.6, 0.4, 0],
+              }}
+              transition={{
+                duration: duration,
+                repeat: Infinity,
+                ease: 'linear',
+                delay: delay,
+              }}
+              className="absolute rounded-full bg-white"
+              style={{
+                width: `${size}px`,
+                height: `${size}px`,
+                left: `${startX}%`,
+                top: `${startY}%`,
+                boxShadow: '0 0 10px rgba(255, 255, 255, 0.3)',
+              }}
+            />
+          );
+        })}
 
         <div className="container-custom relative z-10 text-center py-20">
           <motion.h1

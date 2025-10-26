@@ -125,19 +125,40 @@ export default function ServicesPage() {
   return (
     <div className="overflow-hidden">
       {/* Hero Section */}
-      <section className="relative min-h-[60vh] flex items-center justify-center gradient-bg text-white">
-        <motion.div
-          animate={{
-            rotate: [0, 360],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: 'linear',
-          }}
-          className="absolute top-10 right-10 w-72 h-72 bg-white opacity-5 rounded-full"
-        />
+      <section className="relative min-h-[60vh] flex items-center justify-center gradient-bg text-white overflow-hidden">
+        {/* Animated Background Bubbles */}
+        {[...Array(20)].map((_, i) => {
+          const size = Math.random() * 40 + 10;
+          const delay = Math.random() * 8;
+          const duration = Math.random() * 8 + 10;
+          const startX = Math.random() * 100;
+          const startY = 100 + Math.random() * 20;
+          
+          return (
+            <motion.div
+              key={i}
+              animate={{
+                y: [0, typeof window !== 'undefined' ? -window.innerHeight - 100 : -1000],
+                x: [0, Math.sin(i) * 50, Math.cos(i) * 30],
+                opacity: [0, 0.4, 0.6, 0.4, 0],
+              }}
+              transition={{
+                duration: duration,
+                repeat: Infinity,
+                ease: 'linear',
+                delay: delay,
+              }}
+              className="absolute rounded-full bg-white"
+              style={{
+                width: `${size}px`,
+                height: `${size}px`,
+                left: `${startX}%`,
+                top: `${startY}%`,
+                boxShadow: '0 0 10px rgba(255, 255, 255, 0.3)',
+              }}
+            />
+          );
+        })}
 
         <div className="container-custom relative z-10 text-center py-20">
           <motion.h1
@@ -359,12 +380,12 @@ export default function ServicesPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/contact">
-                <Button size="lg" className="bg-white text-primary-600 hover:bg-primary-50">
+                <Button size="lg" className="bg-primary-600 border-2 border-white text-white hover:bg-white hover:text-primary-600 hover:shadow-2xl">
                   Contact Us
                 </Button>
               </Link>
               <Link href="/shop">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary-600">
+                <Button size="lg" className="bg-primary-600 border-2 border-white text-white hover:bg-white hover:text-primary-600 hover:shadow-2xl">
                   Visit Our Shop
                 </Button>
               </Link>

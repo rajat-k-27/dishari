@@ -45,6 +45,37 @@ export default function ProfilePage() {
     }
   };
 
+  const handleCancelOrder = async (orderId) => {
+    if (!confirm('Are you sure you want to cancel this order?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderStatus: 'cancelled',
+          cancelledBy: 'user',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Order cancelled successfully');
+        fetchOrders(); // Refresh orders
+      } else {
+        toast.error(data.error || 'Failed to cancel order');
+      }
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      toast.error('Failed to cancel order');
+    }
+  };
+
   if (status === 'loading' || loading) {
     return <LoadingSpinner fullScreen />;
   }
@@ -221,8 +252,25 @@ export default function ProfilePage() {
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center space-x-1 ${getStatusColor(order.orderStatus)}`}>
                               {getStatusIcon(order.orderStatus)}
                               <span className="capitalize">{order.orderStatus}</span>
+                              {order.orderStatus === 'cancelled' && order.cancelledBy && (
+                                <span className="ml-1 text-xs opacity-80">
+                                  (by {order.cancelledBy})
+                                </span>
+                              )}
                             </span>
                           </div>
+
+                          {/* Cancellation Notice */}
+                          {order.orderStatus === 'cancelled' && order.cancelledBy && (
+                            <div className="col-span-full mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                              <p className="text-sm font-semibold text-red-800 flex items-center gap-2">
+                                <span>⚠️</span>
+                                <span>
+                                  This order was cancelled by {order.cancelledBy === 'user' ? 'you' : 'admin'}
+                                </span>
+                              </p>
+                            </div>
+                          )}
                           
                           {/* Payment Status */}
                           <div className="flex items-center space-x-2">
@@ -290,6 +338,19 @@ export default function ProfilePage() {
                             </p>
                           </div>
                         </div>
+
+                        {/* Cancel Order Button */}
+                        {order.orderStatus !== 'cancelled' && order.orderStatus !== 'delivered' && order.orderStatus !== 'shipped' && (
+                          <div className="border-t mt-4 pt-4">
+                            <button
+                              onClick={() => handleCancelOrder(order._id)}
+                              className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-semibold flex items-center justify-center gap-2"
+                            >
+                              <FaTimes />
+                              Cancel Order
+                            </button>
+                          </div>
+                        )}
 
                         {order.customerInfo?.address && (
                           <div className="border-t mt-4 pt-4">
