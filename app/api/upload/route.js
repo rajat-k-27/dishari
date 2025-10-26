@@ -3,13 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-};
+export const maxDuration = 60; // Maximum duration in seconds for serverless function
 
 export async function POST(request) {
   try {
