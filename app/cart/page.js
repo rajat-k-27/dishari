@@ -16,7 +16,7 @@ export default function CartPage() {
   const router = useRouter();
   const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCartStore();
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated (but wait for loading to complete)
   useEffect(() => {
     if (status === 'unauthenticated') {
       toast.error('Please login to view your cart');

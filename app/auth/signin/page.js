@@ -81,7 +81,13 @@ function AuthPageContent() {
           setIsRegister(false);
         } else {
           toast.success('Logged in successfully!');
-          router.push(callbackUrl);
+          
+          // Wait for the session to be fully established
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
+          // Force a full page reload to ensure session is properly loaded
+          // This prevents the middleware from redirecting due to stale session
+          window.location.href = callbackUrl;
         }
       } else {
         toast.error(data.error || 'Registration failed');
