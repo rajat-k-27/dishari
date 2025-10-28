@@ -16,6 +16,7 @@ function CheckoutForm() {
   const { items, clearCart, getTotalPrice } = useCartStore();
 
   const [loading, setLoading] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('razorpay'); // 'razorpay' or 'cod'
   const [formData, setFormData] = useState({
     name: '',
@@ -153,6 +154,9 @@ function CheckoutForm() {
         description: `Order #${orderData.data.order._id}`,
         order_id: razorpayData.data.orderId,
         handler: async function (response) {
+          // Show payment verification loader
+          setVerifyingPayment(true);
+          
           try {
             // Step 4: Verify payment
             const verifyResponse = await fetch('/api/payment/razorpay/verify', {
@@ -173,6 +177,12 @@ function CheckoutForm() {
             if (verifyData.success) {
               clearCart();
               toast.success('Payment successful! Order confirmed.');
+              
+              // Keep the loader showing while redirecting
+              // Small delay to let user see the success message
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
+              // Redirect to order success page
               router.push(`/order-success?orderId=${orderData.data.order._id}`);
             } else {
               throw new Error(verifyData.error || 'Payment verification failed');
@@ -180,6 +190,7 @@ function CheckoutForm() {
           } catch (error) {
             console.error('Payment verification error:', error);
             toast.error(error.message || 'Payment verification failed');
+            setVerifyingPayment(false);
           }
         },
         prefill: {
@@ -223,7 +234,8 @@ function CheckoutForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <>
+      <form onSubmit={handleSubmit} className="space-y-8">
       {/* Customer Information */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Customer Information</h2>
@@ -483,6 +495,43 @@ function CheckoutForm() {
         )}
       </Button>
     </form>
+
+    {/* Payment Verification Loader Modal */}
+    {verifyingPayment && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl"
+        >
+          <div className="mb-6">
+            <div className="relative w-20 h-20 mx-auto">
+              <div className="absolute inset-0 border-4 border-primary-200 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-primary-600 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+          </div>
+          
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            Verifying Payment
+          </h3>
+          
+          <p className="text-gray-600 mb-6">
+            Please wait while we confirm your payment...
+          </p>
+          
+          <div className="flex items-center justify-center space-x-2">
+            <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          </div>
+          
+          <p className="text-sm text-gray-500 mt-6">
+            🔒 Your payment is secure
+          </p>
+        </motion.div>
+      </div>
+    )}
+    </>
   );
 }
 
